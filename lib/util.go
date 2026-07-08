@@ -768,7 +768,7 @@ func StopTimer(t *time.Timer) {
 // CatchPanic() catches any panic in the function call or child function calls
 func CatchPanic(l LoggerI) {
 	if r := recover(); r != nil {
-		l.Errorf(string(debug.Stack()))
+		l.Error(string(debug.Stack()))
 	}
 }
 

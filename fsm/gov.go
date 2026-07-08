@@ -135,7 +135,7 @@ func (s *StateMachine) ConformStateToParamUpdate(previousParams *Params) lib.Err
 		// prune checkpoints
 		storeI, ok := s.store.(lib.StoreI)
 		if !ok {
-			s.log.Errorf(ErrWrongStoreType().Error())
+			s.log.Error(ErrWrongStoreType().Error())
 		} else {
 			if err = storeI.DeleteCheckpointsForChain(params.Consensus.ResetCommittee); err != nil {
 				return err

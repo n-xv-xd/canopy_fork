@@ -76,7 +76,7 @@ func New(p crypto.PrivateKeyI, maxMembersPerCommittee uint64, m *lib.Metrics, c 
 	for _, ip := range c.BannedIPs {
 		i, err := net.ResolveIPAddr("", ip)
 		if err != nil {
-			l.Fatalf(err.Error())
+			l.Fatal(err.Error())
 		}
 		bannedIPs = append(bannedIPs, *i)
 	}
@@ -200,7 +200,7 @@ func (p *P2P) DialForOutboundPeers() {
 		peerAddress, err := getPeerFromString(peerString)
 		if err != nil {
 			// log the invalid format
-			p.log.Errorf(err.Error())
+			p.log.Error(err.Error())
 			// continue with the next
 			continue
 		}
@@ -232,7 +232,7 @@ func (p *P2P) DialForOutboundPeers() {
 				// otherwise, fallback to config's dial peers
 				dialPeer, err := getPeerFromString(p.config.DialPeers[rand.Intn(len(p.config.DialPeers))])
 				if err != nil {
-					p.log.Errorf(err.Error())
+					p.log.Error(err.Error())
 					return
 				}
 				peer = dialPeer
