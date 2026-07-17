@@ -335,8 +335,12 @@ func (s *StateMachine) HandleDexBatchOrders(remoteBatch *lib.DexBatch, x, y *uin
 	if *x == 0 || *y == 0 {
 		return nil, ErrInvalidLiquidityPool()
 	}
-	// for each order
-	for _, order := range sorted {
+	// for each order (pseudorandomly ordered above so the settlement cap selects fairly)
+	for i, order := range sorted {
+		// per-block settlement cap: remaining orders keep a zero receipt and get refunded on the origin chain
+		if i >= lib.MaxOrdersSettledPerBlock {
+			break
+		}
 		// set up 'deltaX'
 		dX := order.AmountForSale
 		// 'deltaY' = (dX * y) / (x + dX)

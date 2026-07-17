@@ -2597,6 +2597,50 @@ func TestHandleDexBatchOrdersRejectsReserveOverflow(t *testing.T) {
 	require.Equal(t, y0, y)
 }
 
+// An oversized batch must not settle more than the per-block cap; overflow orders keep a zero receipt
+// (refunded to the seller on the origin chain) so the whole batch still resolves in a single block.
+func TestHandleDexBatchOrdersEnforcesSettlementCap(t *testing.T) {
+	sm := newTestStateMachine(t)
+	sm.Config.ChainId = 1
+	chainId := uint64(2)
+
+	const extra = 5
+	total := lib.MaxOrdersSettledPerBlock + extra
+	// pool large enough that every *attempted* order succeeds (RequestedAmount 0)
+	pool := uint64(1_000_000_000_000)
+	require.NoError(t, sm.SetPool(&Pool{Id: chainId + LiquidityPoolAddend, Amount: pool}))
+
+	orders := make([]*lib.DexLimitOrder, total)
+	for i := range orders {
+		addr := make([]byte, crypto.AddressSize)
+		addr[0], addr[1] = byte(i+1), byte((i+1)>>8)
+		orders[i] = &lib.DexLimitOrder{
+			AmountForSale:   1_000,
+			RequestedAmount: 0,
+			Address:         addr,
+			OrderId:         addr,
+		}
+	}
+	batch := &lib.DexBatch{Committee: chainId, Orders: orders}
+
+	x, y := pool, pool
+	receipts, err := sm.HandleDexBatchOrders(batch, &x, &y, chainId)
+	require.NoError(t, err)
+	require.Len(t, receipts, total)
+
+	var settled, refunded int
+	for _, r := range receipts {
+		if r == 0 {
+			refunded++
+		} else {
+			settled++
+		}
+	}
+	// exactly the cap is settled; the remainder is left with a zero receipt for refund on the origin chain
+	require.Equal(t, lib.MaxOrdersSettledPerBlock, settled)
+	require.Equal(t, extra, refunded)
+}
+
 // Proves withdraw->redeposit cannot increase LP points (no gain loop), allowing only rounding loss.
 func TestWithdrawThenRedeploy_NoPointGain(t *testing.T) {
 	sm := newTestStateMachine(t)
